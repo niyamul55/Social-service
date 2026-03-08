@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>SMM PRO - User Dashboard</title>
+    
+    <!-- Fonts & Icons & Swiper CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --gray-light: #e5e7eb;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --dark: #f9fafb;
+            --light: #111827;
+            --gray: #9ca3af;
+            --gray-light: #374151;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); color: var(--dark); line-height: 1.5; min-height: 100vh; padding-bottom: 80px; }
+
+        /* Landing Page Styles */
+        .landing-container { 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            z-index: 2000; 
+            position: relative; 
+            text-align: center;
+        }
+        .landing-content {
+            width: 100%; 
+            max-width: 500px;
+            text-align: center;
+        }
+        .landing-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .loading-text {
+            margin-top: 20px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .landing-logo {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        .landing-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .landing-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* Auth Styles */
+        .auth-container { 
+            min-height: 100vh; 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); 
+            z-index: 2000; 
+            position: relative; 
+        }
+        .auth-card { 
+            background: var(--light); 
+            border-radius: var(--radius); 
+            padding: 30px; 
+            width: 100%; 
+            max-width: 400px; 
+            box-shadow: var(--shadow); 
+        }
+        .auth-tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 30px; 
+        }
+        .auth-tab { 
+            flex: 1; 
+            padding: 12px; 
+            border: none; 
+            background: var(--gray-light); 
+            color: var(--dark); 
+            border-radius: 8px; 
+            font-weight: 500; 
+            cursor: pointer; 
+        }
+        .auth-tab.active { 
+            background: var(--primary); 
+            color: white; 
+        }
+        .auth-form { 
+            display: none; 
+        }
+        .auth-form.active { 
+            display: block; 
+        }
+
+        /* Common Elements */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--dark); }
+        .form-input, .form-select { width: 100%; padding: 12px 16px; border: 2px solid var(--gray-light); border-radius: 8px; font-size: 16px; background: var(--light); color: var(--dark); }
+        .form-select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Main App Header */
+        .app-header { background: var(--primary); color: white; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+        .header-content { display: flex; align-items: center; justify-content: space-between; }
+        .balance-display { background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-weight: 600; }
+
+        /* Stats & Content */
+        .page-container { padding: 20px; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--light); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--gray-light); }
+        .stat-value { font-size: 24px; font-weight: 700; }
+        .stat-label { font-size: 12px; color: var(--gray); }
+
+        /* Custom Order Form */
+        .custom-order-form { background: var(--light); border-radius: var(--radius); padding: 20px; margin-top: 20px; box-shadow: var(--shadow); border: 1px solid var(--gray-light); }
+        .info-box { background: rgba(79, 70, 229, 0.1); border-left: 4px solid var(--primary); padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .service-details { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
+        .service-details.active { display: block; }
+        .details-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+        .total-cost-display { background: var(--primary); color: white; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 20px; margin-top: 15px; display: none; }
+        .total-cost-display.active { display: block; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--light); border-top: 1px solid var(--gray-light); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--gray); text-decoration: none; padding: 8px; flex: 1; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 20px; }
+        .nav-label { font-size: 11px; font-weight: 500; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--light); border-radius: var(--radius); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px; }
+        
+        /* Swiper */
+        .swiper { width: 100%; height: 180px; border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
+        .swiper-slide { width: 100%; height: 100%; }
+        .swiper-slide img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+        
+        /* Marquee */
+        .marquee-container {
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .marquee-container marquee {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: var(--gray-light); }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-primary { background: #dbeafe; color: #1e40af; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        /* Payment Methods */
+        .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .payment-method { border: 2px solid var(--gray-light); border-radius: 8px; padding: 15px; cursor: pointer; text-align: center; position: relative; }
+        .payment-method.selected { border-color: var(--primary); background: rgba(79, 70, 229, 0.05); }
+        .payment-number { font-size: 14px; margin-top: 8px; font-weight: 600; color: var(--dark); }
+        .copy-btn { position: absolute; top: 5px; right: 5px; background: var(--primary); color: white; border: none; border-radius: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; }
+
+        /* Loading */
+        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 3000; color: white; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Order History */
+        .order-item { background: var(--light); border-radius: var(--radius); padding: 15px; margin-bottom: 10px; box-shadow: var(--shadow); border: 1px solid var(--gray-light); }
+        .order-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .order-service { font-weight: 600; }
+        .order-link { font-size: 12px; color: var(--gray); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 5px; }
+        .order-footer { display: flex; justify-content: space-between; align-items: center; }
+        .order-cost { font-weight: 700; color: var(--primary); }
+
+        /* Deposit History */
+        .history-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--gray-light); }
+        .history-item { background: var(--light); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; border: 1px solid var(--gray-light); font-size: 14px; }
+        .history-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .history-amount { font-weight: 600; color: var(--primary); }
+        .history-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .history-status.pending { background: #fef3c7; color: #92400e; }
+        .history-status.approved { background: #d1fae5; color: #065f46; }
+        .history-status.rejected { background: #fee2e2; color: #991b1b; }
+        .history-details { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); }
+        
+        /* Toast Notification */
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--light); color: var(--dark); padding: 12px 20px; border-radius: var(--radius); box-shadow: var(--shadow); z-index: 3001; transform: translateX(150%); transition: transform 0.3s ease; border-left: 4px solid var(--primary); }
+        .toast.show { transform: translateX(0); }
+        
+        /* Profile Image */
+        .profile-img-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+        .profile-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-edit-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        /* Profile Edit Modal */
+        .profile-edit-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <div>Please wait...</div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Landing Page -->
+    <div id="landingPage" class="landing-container">
+        <div class="landing-content">
+            <img src="https://files.catbox.moe/rllo36.jpg" class="landing-image" alt="">
+            <div class="landing-logo">
+                <i class="fas fa-rocket"></i> 
+            </div>
+            <h1 class="landing-title">Professional Social Media Marketing</h1>
+            <p class="landing-subtitle">High-quality followers, likes, views & more</p>
+            <div class="loading-text">
+                <i class="fas fa-circle-notch fa-spin"></i> Checking your Internet
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Page -->
+    <div id="authPage" class="auth-container">
+        <div class="auth-card">
+            <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">SMM PRO</h2>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuth('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuth('register')">Register</button>
+            </div>
+            
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="registerPassword" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-success">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appContainer" style="display: none;">
+        <header class="app-header">
+            <div class="header-content">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px;">
+                    <div id="headerLogo" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <i class="fas fa-user" style="font-size: 16px;"></i>
+                    </div>
+                    <span>SMM PRO</span>
+                </div>
+                <div class="balance-display"><i class="fas fa-wallet"></i> <span id="headerBalance">0.00</span>৳</div>
+            </div>
+        </header>
+
+        <div class="page-container">
+            <!-- Home Page -->
+            <div id="homePage" class="page-content active">
+                <!-- Swiper -->
+                <div class="swiper">
+                    <div class="swiper-wrapper">
+                        <div class="swiper-slide"><img src="https://files.catbox.moe/rllo36.jpg"></div>
+                        <div class="swiper-slide"><img src="https://files.catbox.moe/p31yd1.jpg"></div>
+                        <div class="swiper-slide"><img src="https://files.catbox.moe/tq2poc.jpg"></div>
+                        <div class="swiper-slide"><img src="https://files.catbox.moe/zg904p.jpg"></div>
+                    </div>
+                </div>
+                
+                <!-- Marquee -->
+                <div class="marquee-container">
+                    <marquee id="marqueeText" style="font-size: 14px; font-weight: 500;">
+                        🚀 Welcome to SMM Pro - High Quality Social Media Services! Facebook Likes, Instagram Followers, YouTube Views & More! 
+                    </marquee>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Balance</div>
+                        <div class="stat-value" id="homeBalance">0.00৳</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Orders</div>
+                        <div class="stat-value" id="homeOrders">0</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; font-weight: 600;">Quick Order</h3>
+                
+                <!-- Custom Order Form -->
+                <div class="custom-order-form">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i> আসসালামু আলাইকুম  সবাই কেমন আছেন
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="categorySelect" onchange="loadServicesByCategory()">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Service</label>
+                        <select class="form-select" id="serviceSelect" onchange="showServiceDetails()" disabled>
+                            <option value="">Select Service</option>
+                        </select>
+                    </div>
+                    
+                    <div id="serviceDetails" class="service-details"></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Link</label>
+                        <input type="url" class="form-input" id="orderLink" placeholder="https://example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-input" id="orderQty" placeholder="500" min="100" oninput="calculateCustomOrderCost()" required>
+                    </div>
+                    
+                    <div id="totalCostDisplay" class="total-cost-display">
+                        Total Cost: <span id="totalCostValue">0.00</span>৳
+                    </div>
+                    
+                    <button class="btn btn-primary" id="placeCustomOrderBtn" onclick="placeCustomOrder()" disabled>
+                        <i class="fas fa-shopping-cart"></i> Place Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders Page -->
+            <div id="ordersPage" class="page-content">
+                <h3 style="margin-bottom: 20px;">Order History</h3>
+                <div id="ordersList"></div>
+            </div>
+
+            <!-- Deposit Page -->
+            <div id="depositPage" class="page-content">
+                <h3 style="margin-bottom: 20px;">Add Funds</h3>
+                <div class="payment-methods">
+                    <div class="payment-method selected" onclick="selectMethod(this, 'bkash')">
+                        <i class="fas fa-mobile-alt" style="color: #e2136e; font-size: 24px;"></i><br>bKash
+                        <div class="payment-number">01877998894</div>
+                        <button class="copy-btn" onclick="copyNumber('01877998894', event)"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <div class="payment-method" onclick="selectMethod(this, 'nagad')">
+                        <i class="fas fa-mobile-alt" style="color: #f8a51c; font-size: 24px;"></i><br>Nagad
+                        <div class="payment-number">01877998894</div>
+                        <button class="copy-btn" onclick="copyNumber('01877998894', event)"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                
+                <div class="stat-card" style="margin-bottom: 20px;">
+                    <p style="text-align: center; color: var(--gray);">
+                        Send money to: <strong id="paymentNumber">01877998894</strong><br>
+                        <small>Click on the copy icon above to copy the number</small>
+                    </p>
+                </div>
+                
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label class="form-label">Amount</label>
+                        <input type="number" id="depAmount" class="form-input" placeholder="100" min="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Transaction ID</label>
+                        <input type="text" id="depTrx" class="form-input" placeholder="TrxID" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Deposit</button>
+                </form>
+                
+                <!-- Deposit History Section -->
+                <div class="history-section">
+                    <h4 style="margin-bottom: 15px;">Deposit History</h4>
+                    <div id="depositHistory"></div>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div id="profilePage" class="page-content">
+                <div class="stat-card" style="text-align: center; margin-bottom: 20px; position: relative;">
+                    <div id="profileLogoContainer" style="width: 80px; height: 80px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 32px; margin-bottom: 10px; overflow: hidden; cursor: pointer;" onclick="openProfileEditModal()">
+                        <div id="profileLogo" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    <button class="profile-edit-btn" onclick="openProfileEditModal()">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <h3 id="profileName">User Name</h3>
+                    <p id="profileEmail" style="color: var(--gray);">user@example.com</p>
+                </div>
+                <div class="stat-card" style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">Account Details</h4>
+                    <p><strong>User ID:</strong> <span id="profileUserId">N/A</span></p>
+                    <p><strong>Joined:</strong> <span id="profileJoined">N/A</span></p>
+                </div>
+                <button class="btn" style="background: var(--gray-light); color: var(--dark); margin-bottom: 10px;" onclick="toggleTheme()">Toggle Theme</button>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active" onclick="navTo('home')"><i class="fas fa-home nav-icon"></i><span class="nav-label">Home</span></a>
+            <a href="#" class="nav-item" onclick="navTo('orders')"><i class="fas fa-list nav-icon"></i><span class="nav-label">Orders</span></a>
+            <a href="#" class="nav-item" onclick="navTo('deposit')"><i class="fas fa-plus-circle nav-icon"></i><span class="nav-label">Deposit</span></a>
+            <a href="#" class="nav-item" onclick="navTo('profile')"><i class="fas fa-user nav-icon"></i><span class="nav-label">Profile</span></a>
+        </nav>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button onclick="closeModal('profileEditModal')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--dark);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="profileEditForm" class="profile-edit-form">
+                    <div class="form-group" style="text-align: center;">
+                        <div id="profileEditLogoContainer" class="profile-img-container" onclick="triggerProfileImageUpload()">
+                            <div id="profileEditLogo">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <input type="file" id="profileImageInput" accept="image/*" style="display: none;" onchange="handleProfileImageUpload(event)">
+                        </div>
+                        <p style="margin-top: 10px; font-size: 14px; color: var(--gray);">Click to upload profile image</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="editProfileName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="editProfileEmail" disabled>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('profileEditModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProfileChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdysBhaVxNYbXx00v72hP_a-Nk0-qrvl0",
+            authDomain: "appmi-telegram.firebaseapp.com",
+            projectId: "appmi-telegram",
+            storageBucket: "appmi-telegram.firebasestorage.app",
+            messagingSenderId: "510320231074",
+            appId: "1:510320231074:web:aa75dc643b6e2533238dfb"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Telegram Bot Configuration
+        const TELEGRAM_BOT_TOKEN = "7512628084:AAGlLgdwrrwBILMKXzR263PO_wlq5ur0jlk";
+        const ADMIN_CHAT_ID = "6799848229";
+
+        let currentUser = null;
+        let userData = null;
+        let servicesListener = null;
+        let ordersListener = null;
+        let depositsListener = null;
+        let allServices = [];
+        let categories = new Set();
+        let selectedPaymentMethod = 'bkash';
+        let swiperInstance = null;
+        let autoLoginChecked = false;
+        let selectedService = null;
+        let contentSettings = null;
+        let swiperDelay = 3000;
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('landingPage').style.display = 'flex';
+            document.getElementById('authPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'none';
+            
+            // Load content settings first
+            loadContentSettings().then(() => {
+                // Initialize swiper with loaded settings
+                initializeSwiper();
+            });
+            
+            setupEventListeners();
+            
+            setTimeout(() => {
+                checkAutoLogin();
+            }, 1500);
+        });
+
+        async function loadContentSettings() {
+            try {
+                const doc = await db.collection('settings').doc('content').get();
+                if (doc.exists) {
+                    contentSettings = doc.data();
+                    swiperDelay = contentSettings.swiperDelay || 3000;
+                    
+                    // Update marquee text
+                    if (contentSettings.marqueeText) {
+                        document.getElementById('marqueeText').innerHTML = contentSettings.marqueeText;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading content settings:', error);
+                contentSettings = {
+                    sliderImage1: 'https://files.catbox.moe/rllo36.jpg',
+                    sliderImage2: 'https://files.catbox.moe/p31yd1.jpg',
+                    sliderImage3: 'https://files.catbox.moe/tq2poc.jpg',
+                    sliderImage4: 'https://files.catbox.moe/zg904p.jpg',
+                    marqueeText: '🚀 Welcome to SMM Pro - High Quality Social Media Services! Facebook Likes, Instagram Followers, YouTube Views & More!',
+                    swiperDelay: 3000,
+                    defaultUserLogo: 'fas fa-user'
+                };
+            }
+        }
+
+        function initializeSwiper() {
+            // Update slider images if content settings exist
+            if (contentSettings) {
+                const swiperWrapper = document.querySelector('.swiper-wrapper');
+                if (swiperWrapper) {
+                    swiperWrapper.innerHTML = `
+                        <div class="swiper-slide"><img src="${contentSettings.sliderImage1}"></div>
+                        <div class="swiper-slide"><img src="${contentSettings.sliderImage2}"></div>
+                        <div class="swiper-slide"><img src="${contentSettings.sliderImage3}"></div>
+                        <div class="swiper-slide"><img src="${contentSettings.sliderImage4}"></div>
+                    `;
+                }
+            }
+            
+            swiperInstance = new Swiper('.swiper', { 
+                autoplay: { 
+                    delay: swiperDelay, // Use loaded settings
+                    disableOnInteraction: false 
+                }, 
+                loop: true,
+                speed: 500,
+                slidesPerView: 1,
+                spaceBetween: 0,
+                centeredSlides: true,
+                effect: 'slide',
+                grabCursor: true
+            });
+        }
+
+        function checkAutoLogin() {
+            if (autoLoginChecked) return;
+            
+            autoLoginChecked = true;
+            
+            auth.onAuthStateChanged((user) => {
+                if (user && user.email !== 'admin@admin.com') {
+                    currentUser = user;
+                    setTimeout(() => {
+                        loadUserData();
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('landingPage').style.display = 'none';
+                        document.getElementById('authPage').style.display = 'flex';
+                        document.getElementById('appContainer').style.display = 'none';
+                    }, 1000);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // Login Handler
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                userLogin(email, password);
+            });
+
+            // Register Handler
+            document.getElementById('registerForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                userRegister(name, email, password);
+            });
+
+            // Deposit Handler
+            document.getElementById('depositForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                submitDeposit();
+            });
+
+            // Custom order form validation
+            document.getElementById('orderLink').addEventListener('input', validateCustomOrder);
+            document.getElementById('orderQty').addEventListener('input', validateCustomOrder);
+        }
+
+        // --- AUTH FUNCTIONS ---
+        function switchAuth(type) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(type + 'Form').classList.add('active');
+        }
+
+        function userLogin(email, password) {
+            showLoading();
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    if (user.email === 'admin@admin.com') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        currentUser = user;
+                        loadUserData();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Login error:', error);
+                    hideLoading();
+                    alert('Login failed: ' + error.message);
+                });
+        }
+
+        function userRegister(name, email, password) {
+            showLoading();
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        balance: 0,
+                        totalOrders: 0,
+                        status: 'active',
+                        createdAt: new Date(),
+                        isAdmin: false
+                    });
+                })
+                .then(() => {
+                    hideLoading();
+                    showToast('Registration successful! Please login.');
+                    switchAuth('login');
+                    document.getElementById('registerForm').reset();
+                })
+                .catch((error) => {
+                    console.error('Registration error:', error);
+                    hideLoading();
+                    alert('Registration failed: ' + error.message);
+                });
+        }
+
+        async function loadUserData() {
+            showLoading();
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                
+                if (userDoc.exists) {
+                    userData = userDoc.data();
+                    userData.id = currentUser.uid;
+                    loadApp();
+                    setupUserListeners();
+                } else {
+                    await db.collection('users').doc(currentUser.uid).set({
+                        name: currentUser.displayName || currentUser.email.split('@')[0],
+                        email: currentUser.email,
+                        balance: 0,
+                        totalOrders: 0,
+                        status: 'active',
+                        createdAt: new Date(),
+                        isAdmin: false
+                    });
+                    
+                    userData = {
+                        name: currentUser.displayName || currentUser.email.split('@')[0],
+                        email: currentUser.email,
+                        balance: 0,
+                        totalOrders: 0,
+                        status: 'active'
+                    };
+                    
+                    loadApp();
+                    setupUserListeners();
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                hideLoading();
+                alert('Error loading user data');
+            }
+        }
+
+        function setupUserListeners() {
+            // User data listener
+            db.collection('users').doc(currentUser.uid).onSnapshot((doc) => {
+                if (doc.exists) {
+                    userData = { id: doc.id, ...doc.data() };
+                    updateUI();
+                }
+            });
+
+            // Services listener
+            servicesListener = db.collection('services').onSnapshot((snapshot) => {
+                allServices = [];
+                categories.clear();
+                
+                snapshot.forEach(doc => {
+                    const service = doc.data();
+                    if (service.status !== 'inactive') {
+                        service.id = doc.id;
+                        allServices.push(service);
+                        
+                        if (service.category) {
+                            categories.add(service.category);
+                        }
+                    }
+                });
+                
+                updateCategoryDropdown();
+                
+                if (document.getElementById('homePage').classList.contains('active')) {
+                    loadServicesByCategory();
+                }
+            });
+
+            // Orders listener
+            ordersListener = db.collection('orders').onSnapshot((snapshot) => {
+                const orders = [];
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    if (order.userId === currentUser.uid) {
+                        orders.push({ id: doc.id, ...order });
+                    }
+                });
+                
+                orders.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                if (document.getElementById('ordersPage').classList.contains('active')) {
+                    renderOrders(orders);
+                }
+            });
+
+            // Deposits listener
+            depositsListener = db.collection('deposits').onSnapshot((snapshot) => {
+                const deposits = [];
+                snapshot.forEach(doc => {
+                    const deposit = doc.data();
+                    if (deposit.userId === currentUser.uid) {
+                        deposits.push({ id: doc.id, ...deposit });
+                    }
+                });
+                
+                deposits.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                if (document.getElementById('depositPage').classList.contains('active')) {
+                    renderDepositHistory(deposits);
+                }
+            });
+        }
+
+        function updateCategoryDropdown() {
+            const categorySelect = document.getElementById('categorySelect');
+            const currentValue = categorySelect.value;
+            
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+            
+            if (currentValue && categories.has(currentValue)) {
+                categorySelect.value = currentValue;
+            }
+        }
+
+        // --- CUSTOM ORDER FUNCTIONS ---
+        function loadServicesByCategory() {
+            const category = document.getElementById('categorySelect').value;
+            const serviceSelect = document.getElementById('serviceSelect');
+            
+            serviceSelect.innerHTML = '<option value="">Select Service</option>';
+            serviceSelect.disabled = !category;
+            
+            if (!category) {
+                document.getElementById('serviceDetails').classList.remove('active');
+                document.getElementById('totalCostDisplay').classList.remove('active');
+                document.getElementById('placeCustomOrderBtn').disabled = true;
+                return;
+            }
+            
+            const filteredServices = allServices.filter(service => service.category === category);
+            
+            filteredServices.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service.id;
+                option.textContent = `${service.name} - ${parseFloat(service.price || 0).toFixed(2)}৳ per 1000`;
+                option.setAttribute('data-service', JSON.stringify(service));
+                serviceSelect.appendChild(option);
+            });
+            
+            document.getElementById('serviceDetails').classList.remove('active');
+            document.getElementById('totalCostDisplay').classList.remove('active');
+            document.getElementById('placeCustomOrderBtn').disabled = true;
+        }
+
+        function showServiceDetails() {
+            const serviceSelect = document.getElementById('serviceSelect');
+            const serviceId = serviceSelect.value;
+            
+            if (!serviceId) {
+                document.getElementById('serviceDetails').classList.remove('active');
+                document.getElementById('totalCostDisplay').classList.remove('active');
+                document.getElementById('placeCustomOrderBtn').disabled = true;
+                return;
+            }
+            
+            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            const serviceData = JSON.parse(selectedOption.getAttribute('data-service'));
+            selectedService = serviceData;
+            
+            const minQty = serviceData.min || 100;
+            const maxQty = serviceData.max || 100000;
+            
+            // Set quantity field min and max (hidden from user)
+            document.getElementById('orderQty').min = minQty;
+            document.getElementById('orderQty').max = maxQty;
+            document.getElementById('orderQty').value = minQty;
+            
+            const detailsDiv = document.getElementById('serviceDetails');
+            detailsDiv.innerHTML = `
+                <div class="details-row">
+                    <span>Service ID:</span>
+                    <span>${serviceData.serviceId || 'N/A'}</span>
+                </div>
+                <div class="details-row">
+                    <span>Price per 1000:</span>
+                    <span>${parseFloat(serviceData.price || 0).toFixed(2)}৳</span>
+                </div>
+                <div class="details-row">
+                    <span>Description:</span>
+                    <span>${serviceData.description || 'No description'}</span>
+                </div>
+            `;
+            
+            detailsDiv.classList.add('active');
+            calculateCustomOrderCost();
+            validateCustomOrder();
+        }
+
+        function calculateCustomOrderCost() {
+            if (!selectedService) return;
+            
+            const qty = parseInt(document.getElementById('orderQty').value) || 0;
+            const price = parseFloat(selectedService.price || 0);
+            const cost = (qty / 1000) * price;
+            
+            document.getElementById('totalCostValue').textContent = cost.toFixed(2);
+            document.getElementById('totalCostDisplay').classList.add('active');
+        }
+
+        function validateCustomOrder() {
+            const link = document.getElementById('orderLink').value;
+            const qty = document.getElementById('orderQty').value;
+            const serviceSelected = document.getElementById('serviceSelect').value;
+            
+            const isValid = link && qty && serviceSelected && 
+                          parseInt(qty) >= parseInt(document.getElementById('orderQty').min) &&
+                          parseInt(qty) <= parseInt(document.getElementById('orderQty').max);
+            
+            document.getElementById('placeCustomOrderBtn').disabled = !isValid;
+            return isValid;
+        }
+
+        // Function to send Telegram notification
+        async function sendTelegramNotification(message) {
+            try {
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: ADMIN_CHAT_ID,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Telegram notification sent:', data);
+                return data.ok;
+            } catch (error) {
+                console.error('Error sending Telegram notification:', error);
+                return false;
+            }
+        }
+
+        async function placeCustomOrder() {
+            if (!validateCustomOrder() || !selectedService || !userData) {
+                showToast('Please fill all fields correctly');
+                return;
+            }
+            
+            const link = document.getElementById('orderLink').value;
+            const qty = parseInt(document.getElementById('orderQty').value);
+            const price = parseFloat(selectedService.price || 0);
+            const cost = (qty / 1000) * price;
+            
+            // Validate quantity
+            const minQty = selectedService.min || 100;
+            const maxQty = selectedService.max || 100000;
+            
+            if (qty < minQty) {
+                alert(`Minimum quantity is ${minQty}`);
+                return;
+            }
+            
+            if (qty > maxQty) {
+                alert(`Maximum quantity is ${maxQty}`);
+                return;
+            }
+            
+            // Check balance
+            if (parseFloat(userData.balance || 0) < cost) {
+                alert("Insufficient Balance! Please deposit first.");
+                navTo('deposit');
+                return;
+            }
+            
+            showLoading();
+            try {
+                // Create order
+                const orderData = {
+                    userId: currentUser.uid,
+                    userName: userData.name,
+                    serviceId: selectedService.id,
+                    serviceName: selectedService.name,
+                    link: link,
+                    quantity: qty,
+                    cost: cost,
+                    status: 'processing',
+                    createdAt: new Date(),
+                    apiServiceId: selectedService.serviceId,
+                    apiKey: selectedService.apiKey
+                };
+                
+                // Add order to Firestore
+                const orderRef = await db.collection('orders').add(orderData);
+                
+                // Update user balance
+                const newBalance = parseFloat(userData.balance || 0) - cost;
+                await db.collection('users').doc(currentUser.uid).update({
+                    balance: newBalance,
+                    totalOrders: (userData.totalOrders || 0) + 1
+                });
+                
+                // Send Telegram notification for new order
+                const orderMessage = `
+<b>🛒 নতুন অর্ডার</b>
+
+<b>ইউজার:</b> ${userData.name}
+<b>ইমেইল:</b> ${userData.email}
+<b>সার্ভিস:</b> ${selectedService.name}
+<b>লিঙ্ক:</b> ${link}
+<b>পরিমাণ:</b> ${qty}
+<b>মূল্য:</b> ${cost.toFixed(2)}৳
+<b>অর্ডার আইডি:</b> ${orderRef.id}
+<b>সময়:</b> ${new Date().toLocaleString()}
+                `;
+                
+                await sendTelegramNotification(orderMessage);
+                
+                // Try to send to SMM API if credentials exist
+                let apiResponse = null;
+                if (selectedService.serviceId && selectedService.apiKey) {
+                    try {
+                        const apiUrl = `https://smmgen.com/api/v2?key=${selectedService.apiKey}&action=add&service=${selectedService.serviceId}&link=${encodeURIComponent(link)}&quantity=${qty}`;
+                        
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000);
+                        
+                        const response = await fetch(apiUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            apiResponse = await response.json();
+                            
+                            if (apiResponse && apiResponse.order) {
+                                await orderRef.update({
+                                    apiOrderId: apiResponse.order,
+                                    apiResponse: apiResponse,
+                                    status: 'completed'
+                                });
+                                
+                                // Send success notification
+                                const successMessage = `
+<b>✅ অর্ডার সফলভাবে API তে পাঠানো হয়েছে</b>
+
+<b>অর্ডার আইডি:</b> ${orderRef.id}
+<b>API অর্ডার আইডি:</b> ${apiResponse.order}
+<b>স্ট্যাটাস:</b> Completed
+<b>সময়:</b> ${new Date().toLocaleString()}
+                                `;
+                                
+                                await sendTelegramNotification(successMessage);
+                            } else {
+                                await orderRef.update({
+                                    apiResponse: apiResponse,
+                                    status: 'processing'
+                                });
+                            }
+                        } else {
+                            throw new Error('API response not OK');
+                        }
+                    } catch (apiError) {
+                        console.log('API Error:', apiError);
+                        await orderRef.update({
+                            apiError: apiError.message || 'API call failed',
+                            status: 'processing'
+                        });
+                        
+                        // Send error notification
+                        const errorMessage = `
+<b>⚠️ API তে অর্ডার পাঠাতে সমস্যা</b>
+
+<b>অর্ডার আইডি:</b> ${orderRef.id}
+<b>ত্রুটি:</b> ${apiError.message || 'API call failed'}
+<b>স্ট্যাটাস:</b> Processing
+<b>সময়:</b> ${new Date().toLocaleString()}
+                        `;
+                        
+                        await sendTelegramNotification(errorMessage);
+                    }
+                } else {
+                    // If no API credentials, mark as completed manually
+                    await orderRef.update({
+                        status: 'completed'
+                    });
+                }
+                
+                // Reset form
+                document.getElementById('orderLink').value = '';
+                document.getElementById('orderQty').value = selectedService.min || 100;
+                document.getElementById('serviceSelect').value = '';
+                document.getElementById('categorySelect').value = '';
+                document.getElementById('serviceDetails').classList.remove('active');
+                document.getElementById('totalCostDisplay').classList.remove('active');
+                document.getElementById('placeCustomOrderBtn').disabled = true;
+                
+                hideLoading();
+                showToast('Order placed successfully!');
+                navTo('orders');
+            } catch (error) {
+                console.error('Error placing order:', error);
+                hideLoading();
+                alert('Error placing order: ' + error.message);
+                
+                // Send error notification
+                const errorMessage = `
+<b>❌ অর্ডার প্লেস করতে ত্রুটি</b>
+
+<b>ইউজার:</b> ${userData.name}
+<b>ত্রুটি:</b> ${error.message}
+<b>সময়:</b> ${new Date().toLocaleString()}
+                `;
+                
+                await sendTelegramNotification(errorMessage);
+            }
+        }
+
+        // --- APP LOGIC ---
+        function loadApp() {
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('authPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            updateUI();
+            hideLoading();
+        }
+
+        function updateUI() {
+            if (!userData) return;
+            
+            document.getElementById('headerBalance').innerText = parseFloat(userData.balance || 0).toFixed(2);
+            document.getElementById('homeBalance').innerText = parseFloat(userData.balance || 0).toFixed(2) + '৳';
+            document.getElementById('homeOrders').innerText = userData.totalOrders || 0;
+            document.getElementById('profileName').innerText = userData.name || 'User';
+            document.getElementById('profileEmail').innerText = userData.email || 'N/A';
+            document.getElementById('profileUserId').innerText = currentUser.uid.substring(0, 8) + '...';
+            
+            if (userData.createdAt) {
+                const date = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
+                document.getElementById('profileJoined').innerText = date.toLocaleDateString();
+            }
+            
+            // Update header logo with user profile
+            const headerLogo = document.getElementById('headerLogo');
+            if (userData.profileImage) {
+                headerLogo.innerHTML = `<img src="${userData.profileImage}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                headerLogo.innerHTML = `<i class="${contentSettings?.defaultUserLogo || 'fas fa-user'}" style="font-size: 16px;"></i>`;
+            }
+            
+            // Update profile logo
+            const profileLogo = document.getElementById('profileLogo');
+            if (userData.profileImage) {
+                profileLogo.innerHTML = `<img src="${userData.profileImage}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                profileLogo.innerHTML = `<i class="${contentSettings?.defaultUserLogo || 'fas fa-user'}"></i>`;
+            }
+        }
+
+        // --- DEPOSIT FUNCTIONS ---
+        function selectMethod(el, method) {
+            document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedPaymentMethod = method;
+            
+            const numbers = {
+                'bkash': '01877998894',
+                'nagad': '01877998894'
+            };
+            document.getElementById('paymentNumber').textContent = numbers[method] || '01877998894';
+        }
+
+        function copyNumber(number, event) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(number)
+                .then(() => {
+                    showToast('Copied: ' + number);
+                })
+                .catch(err => {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = number;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast('Number copied: ' + number);
+                });
+        }
+
+        async function submitDeposit() {
+            const amount = parseFloat(document.getElementById('depAmount').value);
+            const trxId = document.getElementById('depTrx').value.trim();
+            
+            if (amount < 10) {
+                alert('Minimum deposit amount is 10৳');
+                return;
+            }
+            
+            if (!trxId) {
+                alert('Please enter transaction ID');
+                return;
+            }
+            
+            showLoading();
+            try {
+                const depositData = {
+                    userId: currentUser.uid,
+                    userName: userData.name,
+                    amount: amount,
+                    method: selectedPaymentMethod,
+                    transactionId: trxId,
+                    status: 'pending',
+                    createdAt: new Date()
+                };
+                
+                const depositRef = await db.collection('deposits').add(depositData);
+                
+                // Send Telegram notification for deposit
+                const depositMessage = `
+<b>💰 নতুন ডিপোজিট রিকোয়েস্ট</b>
+
+<b>ইউজার:</b> ${userData.name}
+<b>ইমেইল:</b> ${userData.email}
+<b>পদ্ধতি:</b> ${selectedPaymentMethod}
+<b>পরিমাণ:</b> ${amount.toFixed(2)}৳
+<b>ট্রানজেকশন আইডি:</b> ${trxId}
+<b>ডিপোজিট আইডি:</b> ${depositRef.id}
+<b>সময়:</b> ${new Date().toLocaleString()}
+                `;
+                
+                await sendTelegramNotification(depositMessage);
+                
+                hideLoading();
+                document.getElementById('depositForm').reset();
+                showToast('Deposit request submitted! Admin will approve soon.');
+            } catch (error) {
+                console.error('Error submitting deposit:', error);
+                hideLoading();
+                alert('Error submitting deposit: ' + error.message);
+            }
+        }
+
+        function renderDepositHistory(deposits) {
+            const container = document.getElementById('depositHistory');
+            
+            if (deposits.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:15px; color:var(--gray); font-size:14px;">No deposit history found</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            deposits.forEach(deposit => {
+                const time = deposit.createdAt ? 
+                    (deposit.createdAt.toDate ? deposit.createdAt.toDate().toLocaleString() : new Date(deposit.createdAt).toLocaleString()) : 
+                    'N/A';
+                
+                let statusClass = 'pending';
+                if (deposit.status === 'approved') statusClass = 'approved';
+                if (deposit.status === 'rejected') statusClass = 'rejected';
+                
+                container.innerHTML += `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <span class="history-amount">${parseFloat(deposit.amount || 0).toFixed(2)}৳</span>
+                            <span class="history-status ${statusClass}">${deposit.status}</span>
+                        </div>
+                        <div class="history-details">
+                            <span>${deposit.method} - ${deposit.transactionId}</span>
+                            <span>${time}</span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // --- PROFILE EDIT FUNCTIONS ---
+        function openProfileEditModal() {
+            document.getElementById('editProfileName').value = userData.name || '';
+            document.getElementById('editProfileEmail').value = userData.email || '';
+            
+            const profileEditLogo = document.getElementById('profileEditLogo');
+            if (userData.profileImage) {
+                profileEditLogo.innerHTML = `<img src="${userData.profileImage}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                profileEditLogo.innerHTML = `<i class="${contentSettings?.defaultUserLogo || 'fas fa-user'}"></i>`;
+            }
+            
+            document.getElementById('profileEditModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function triggerProfileImageUpload() {
+            document.getElementById('profileImageInput').click();
+        }
+
+        function handleProfileImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                showToast('Image size should be less than 5MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageData = e.target.result;
+                
+                // Update preview
+                const profileEditLogo = document.getElementById('profileEditLogo');
+                profileEditLogo.innerHTML = `<img src="${imageData}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                
+                // Update user data temporarily
+                userData.profileImage = imageData;
+                
+                showToast('Profile image updated. Click Save Changes to save.');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveProfileChanges() {
+            showLoading();
+            try {
+                const updates = {
+                    name: document.getElementById('editProfileName').value
+                };
+                
+                // If profile image was uploaded
+                if (userData.profileImage && userData.profileImage.startsWith('data:image')) {
+                    updates.profileImage = userData.profileImage;
+                }
+                
+                await db.collection('users').doc(currentUser.uid).update(updates);
+                
+                // Update current user data
+                userData = { ...userData, ...updates };
+                
+                hideLoading();
+                closeModal('profileEditModal');
+                showToast('Profile updated successfully');
+                updateUI();
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                hideLoading();
+                showToast('Error updating profile: ' + error.message);
+            }
+        }
+
+        // --- PAGES & NAVIGATION ---
+        function navTo(page) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.getElementById(page + 'Page').classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            if (page === 'orders') {
+                loadUserOrders();
+            }
+            if (page === 'deposit') {
+                loadDepositHistory();
+            }
+        }
+
+        async function loadUserOrders() {
+            try {
+                const snapshot = await db.collection('orders').get();
+                
+                const orders = [];
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    if (order.userId === currentUser.uid) {
+                        orders.push({ id: doc.id, ...order });
+                    }
+                });
+                
+                orders.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                renderOrders(orders);
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showToast('Error loading orders. Please try again.');
+            }
+        }
+
+        async function loadDepositHistory() {
+            try {
+                const snapshot = await db.collection('deposits').get();
+                
+                const deposits = [];
+                snapshot.forEach(doc => {
+                    const deposit = doc.data();
+                    if (deposit.userId === currentUser.uid) {
+                        deposits.push({ id: doc.id, ...deposit });
+                    }
+                });
+                
+                deposits.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                renderDepositHistory(deposits);
+            } catch (error) {
+                console.error('Error loading deposit history:', error);
+                showToast('Error loading deposit history.');
+            }
+        }
+
+        function renderOrders(orders) {
+            const list = document.getElementById('ordersList');
+            
+            if (orders.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--gray);">No orders found</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            orders.forEach(order => {
+                let badgeClass = 'badge-warning';
+                if (order.status === 'completed') badgeClass = 'badge-success';
+                if (order.status === 'processing') badgeClass = 'badge-primary';
+                if (order.status === 'cancelled') badgeClass = 'badge-danger';
+                
+                const time = order.createdAt ? 
+                    (order.createdAt.toDate ? order.createdAt.toDate().toLocaleDateString() : new Date(order.createdAt).toLocaleDateString()) : 
+                    'N/A';
+                
+                list.innerHTML += `
+                    <div class="order-item">
+                        <div class="order-header">
+                            <span class="order-service">${order.serviceName}</span>
+                            <span class="badge ${badgeClass}">${order.status}</span>
+                        </div>
+                        <div class="order-link">${order.link}</div>
+                        <div class="order-footer">
+                            <div>
+                                <small style="color: var(--gray);">Qty: ${order.quantity}</small><br>
+                                <small style="color: var(--gray);">${time}</small>
+                            </div>
+                            <div class="order-cost">${parseFloat(order.cost || 0).toFixed(2)}৳</div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                auth.signOut().then(() => {
+                    location.reload();
+                });
+            }
+        }
+
+        // --- UTILS ---
+        function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function toggleTheme() {
+            const curr = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', curr === 'light' ? 'dark' : 'light');
+        }
+    </script>
+</body>
+</html>
